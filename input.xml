@@ -1,0 +1,28 @@
+<prototype>
+    
+    <!-- Information Common to the problem -->
+    <common>
+        <outer_radius>1.0</outer_radius>
+        <n_directions>8</n_directions>
+        <n_cells>1000</n_cells>
+        <use_DSA>False</use_DSA>
+        <tolerance>1.0E-6</tolerance>
+    </common>
+    
+    <!-- Information about the source -->
+    <normalization>
+        <source_type>1</source_type>
+        <normalization_method>1</normalization_method>
+        <normalization_value_1>1.0</normalization_value_1>
+        <normalization_value_2>1.0</normalization_value_2>
+    </normalization>
+    
+    <!-- Information about material cross sections-->
+    <cross_sections>
+        <scattering_order>0</scattering_order>
+        <sigma_a>1.0</sigma_a>
+        <sigma_t>1.0</sigma_t>
+        <sigma_1>0.0</sigma_1>
+    </cross_sections>
+    
+</prototype>
