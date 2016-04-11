@@ -4,7 +4,7 @@
     <common>
         <outer_radius>1.0</outer_radius>
         <n_angles>4</n_angles>
-        <n_cells>100</n_cells>
+        <n_cells>200</n_cells>
         <use_DSA>FALSE</use_DSA>
         <tolerance>1.0E-8</tolerance>
         <max_iterations>500</max_iterations>

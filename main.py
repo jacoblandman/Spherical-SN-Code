@@ -38,14 +38,10 @@ def sweep(I, hr, q, sigma_t, mu, BCs, N, gamma, alpha, beta, w, A, V):
     # determine starting direction flux
     psi_edge_edge[I, 0] = BCs[0]
     for i in reversed(range(I)):
-        psi_edge_edge[i, 0] = (q[i] + psi_edge_edge[i+1,0]*(1 - 0.5*sigma_t[i]*hr))/(1 + 0.5*sigma_t[i]*hr)
+        psi_edge_edge[i, 0] = (q[i]*hr + psi_edge_edge[i+1,0]*(1 - 0.5*sigma_t[i]*hr))/(1 + 0.5*sigma_t[i]*hr)
         psi_hat_edge[i,0] = psi_edge_edge[i+1, 0]*gamma[i, 0] + psi_edge_edge[i, 0]*(1 - gamma[i, 0])
         psi_angle_edge[i,0] = psi_edge_edge[i+1, 0]*gamma[i, 1] + psi_edge_edge[i, 0]*(1 - gamma[i, 1])
     
-    
-    #print psi_edge_edge[:,0]
-    #print psi_hat_edge[:,0]
-    #print psi_angle_edge[:,0]
     # perform sweeps
     for n in range(N):
         # for negative angle mu's
@@ -56,46 +52,59 @@ def sweep(I, hr, q, sigma_t, mu, BCs, N, gamma, alpha, beta, w, A, V):
                 if (i > 0):
                     C1 = -mu[n]*A[i] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(1 - gamma[i,0])/beta[n] + sigma_t[i]*V[i]*(1 - gamma[i,1])
                     C2 = mu[n]*A[i+1] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(gamma[i,0])/beta[n] + sigma_t[i]*V[i]*(gamma[i,1])
-                    C3 = 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(1 - beta[n])*psi_angle_edge[i, n]/beta[n] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n]*psi_hat_edge[i,n]
+                    C3 = 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(1 - beta[n])*psi_hat_edge[i, n]/beta[n] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n]*psi_hat_edge[i,n]
                     psi_edge[i,n] = (q[i]*V[i] - psi_edge[i+1,n]*C2 + C3)/C1
-                    psi_hat[i,n] = psi_edge[i+1, 0]*gamma[i, 0] + psi_edge[i, 0]*(1 - gamma[i, 0])
-                    psi[i,n] = psi_edge[i+1, 0]*gamma[i, 1] + psi_edge[i, 0]*(1 - gamma[i, 1])
+                    psi_hat[i,n] = psi_edge[i+1, n]*gamma[i, 0] + psi_edge[i, n]*(1 - gamma[i, 0])
+                    psi[i,n] = psi_edge[i+1, n]*gamma[i, 1] + psi_edge[i, n]*(1 - gamma[i, 1])
                     psi_hat_edge[i,(n+1)] = (psi_hat[i,n] - (1 - beta[n])*psi_hat_edge[i,n])/beta[n]
                 
-                    # see if original equation is satisfied
-                    tmp_psi = (psi_hat[i,n] - (1 - beta[n])*psi_hat_edge[i,n])/beta[n]
+                    # see if original balance equation is satisfied
                     left_side = mu[n]*(A[i+1]*psi_edge[i+1,n] - A[i]*psi_edge[i,n]) + 0.5*(A[i+1] - A[i])/w[n]*(alpha[n+1]*psi_hat_edge[i,n+1] - alpha[n]*psi_hat_edge[i,n])
                     right_side = q[i]*V[i] - sigma_t[i]*V[i]*psi[i,n]
-                    print "Left side = " + str(left_side)
-                    print "Right side = " + str(right_side)
-                    assert(left_side == right_side)
+                    #print "left side = " + str(left_side)
+                    #print "right side = " + str(right_side)
+                    #assert(np.abs(left_side - right_side) < 1E-11*np.abs(left_side))
                     
-                 # do something different for the first cell
+                # do something different for the first cell
                 else:
-                    gamma_tilde = (psi_edge[1,n]*2/3 + psi_edge_edge[0,0]*1/3)/(psi_edge[1,n]*3/4 + psi_edge_edge[0,0]*1/4)
+                    gamma_tilde = (psi_edge[i+1,n]*gamma[0,0] + psi_edge_edge[0,0]*(1 - gamma[0,0]))/(psi_edge[i+1,n]*gamma[0,1] + psi_edge_edge[0,0]*(1 - gamma[0,1]))
                     C1 = sigma_t[i]*V[i] + A[i+1]/(2*w[n])*alpha[n+1]*gamma_tilde/beta[n]
-                    C2 = alpha[n]*psi_hat_edge[i,n] - mu[n]*A[i+1]*psi_edge[i+1,n] + A[i+1]/(2*w[n])*alpha[n+1]*(1 - beta[n])/beta[n]*psi_hat_edge[i,n]
-                    print C2
+                    C2 = A[i+1]/(2*w[n])*alpha[n]*psi_hat_edge[i,n] - mu[n]*A[i+1]*psi_edge[i+1,n] + A[i+1]/(2*w[n])*alpha[n+1]*(1 - beta[n])/beta[n]*psi_hat_edge[i,n]
                     psi[i,n] = (q[i]*V[i] + C2)/C1
-                    psi_edge[i,n] = (psi[i,n] - psi_edge[i+1,n]*gamma[i,1])/(1 - gamma[i,1])
-                    psi_hat[i,n] = (psi_edge[i+1,n]*gamma[i,0] + (1 - gamma[i,0])*psi_edge[i,n])
-            print psi_edge
-
-            # now use a different discretization to solve for the flux in the first cell
+                    psi_hat[i,n] = gamma_tilde*psi[i,n]
+                    # set psi_edge to the starting direction flux?
+                    #psi_edge[i,n] = (psi_hat[i,n] - psi_edge[i+1,n]*gamma[i,0])/(1 - gamma[i,0])
+                    psi_edge[i,n] = psi_edge_edge[0,0]
+                    psi_hat_edge[i,(n+1)] = (psi_hat[i,n] - (1 - beta[n])*psi_hat_edge[i,n])/beta[n]
+                    tmp_psi_edge = (psi[i,n] - psi_edge[i+1,n]*gamma[i,1])/(1 - gamma[i,1])
+                    tmp_psi_edge2 = (gamma_tilde*psi[i,n] - psi_edge[i+1,n]*gamma[i,0])/(1 - gamma[i,0])
+                    
+                    # see if original balance equation is satisfied
+                    left_side = mu[n]*A[i+1]*psi_edge[i+1,n] + 0.5*A[i+1]*(alpha[n+1]*psi_hat_edge[i,n+1] - alpha[n]*psi_hat_edge[i,n])/w[n]
+                    right_side = q[i]*V[i] - sigma_t[i]*V[i]*psi[i,n]
+                    #assert(np.abs(left_side - right_side) < 1E-11*np.abs(left_side))
     
-        # perform sweeps for negative angle mu's
+        # perform sweeps for positive angle mu's
         else:
             psi_edge[0, n] = psi_edge_edge[0, 0]
             # sweep through all cells
-            for i in range(1, (I+1)):
-                #print i
-                break
+            for i in range(0, (I)):
+                C1 = -mu[n]*A[i] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(1 - gamma[i,0])/beta[n] + sigma_t[i]*V[i]*(1 - gamma[i,1])
+                C2 = mu[n]*A[i+1] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(gamma[i,0])/beta[n] + sigma_t[i]*V[i]*(gamma[i,1])
+                C3 = 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(1 - beta[n])*psi_hat_edge[i, n]/beta[n] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n]*psi_hat_edge[i,n]
+                psi_edge[i+1,n] = (q[i]*V[i] - psi_edge[i,n]*C1 + C3)/C2
+                psi_hat[i,n] = psi_edge[i+1, n]*gamma[i, 0] + psi_edge[i, n]*(1 - gamma[i, 0])
+                psi[i,n] = psi_edge[i+1, n]*gamma[i, 1] + psi_edge[i, n]*(1 - gamma[i, 1])
+                psi_hat_edge[i,(n+1)] = (psi_hat[i,n] - (1 - beta[n])*psi_hat_edge[i,n])/beta[n]
 
-
-
-    return psi
+                # see if original balance equation is satisfied
+                left_side = mu[n]*(A[i+1]*psi_edge[i+1,n] - A[i]*psi_edge[i,n]) + 0.5*(A[i+1] - A[i])/w[n]*(alpha[n+1]*psi_hat_edge[i,n+1] - alpha[n]*psi_hat_edge[i,n])
+                right_side = q[i]*V[i] - sigma_t[i]*V[i]*psi[i,n]
+                #assert(np.abs(left_side - right_side) < 1E-11*np.abs(left_side))
+            
+    return psi, psi_edge
 #-------------------------------------------------------------------------------
-def source_iteration(I, hr, q, sigma_t, sigma_s, N, K, tolerance = 1.0e-8, maxits = 100, LOUD=False ):
+def source_iteration(I, hr, q, sigma_t, sigma_a, sigma_s, N, K, tolerance = 1.0e-8, maxits = 100, LOUD=False ):
     """Perform source iteration for single-group steady state problem
     Inputs:
         I:               number of zones 
@@ -121,7 +130,7 @@ def source_iteration(I, hr, q, sigma_t, sigma_s, N, K, tolerance = 1.0e-8, maxit
     
     # intialize phi and phi old
     phi = np.zeros((I, (K+1)))
-    phi_old = phi.copy()
+    phi_old = np.ones((I, (K+1)))
     phi_old_old = phi.copy()
     
     # set area and volume
@@ -147,7 +156,7 @@ def source_iteration(I, hr, q, sigma_t, sigma_s, N, K, tolerance = 1.0e-8, maxit
 
     #print (MU)
     # determine boundary conditions
-    BCs = set_boundaries(MU, W, N)
+    BCs = set_boundaries(MU, W, N, q, sigma_a, normalization, I)
     #print BCs
 
     # initialize the iteration number
@@ -160,41 +169,47 @@ def source_iteration(I, hr, q, sigma_t, sigma_s, N, K, tolerance = 1.0e-8, maxit
     while not(converged):
         
         phi = np.zeros((I, (K+1)))
-        tmp_phi = phi.copy()
-        source = get_source(I, K, sigma_s, phi_old)
+        
+        # calculate scattering source
+        source = get_source(I, K, sigma_s, phi_old, q)
+        
         # sweep over each direction
-        psi = sweep(I,hr,q+source,sigma_t,MU,BCs, N, gamma, alpha, beta, W, A, V)
-#        for n in range(N):
-#            print (n)
-#            source = get_source(I, K, sigma_s, phi_old)
-#            tmp_psi = sweep(I,hr,q + source,sigma_t,MU[n],BCs[n], n, N)
-#            phi = increment_phi(I, K, tmp_phi, tmp_psi, W[n], MU[n])
-#            tmp_phi = phi.copy()
+        psi, psi_edge = sweep(I,hr,source ,sigma_t,MU,BCs, N, gamma, alpha, beta, W, A, V)
 
+        # calculate phi
+        phi = calculate_phi(psi, N, W, MU, K)
+        
         # check convergence
         max_relative_change = np.max(np.abs((phi[:,0] - phi_old[:,0])/phi[:,0]))
         spectral_radius = np.sum(np.abs(phi[:,0] - phi_old[:,0]))/np.sum(np.abs(phi_old[:,0] - phi_old_old[:,0]))
-        relative_error = max_relative_change/(1 - spectral_radius)
+        if (iteration ==1 or iteration ==2):
+            spectral_radius = 0.0
+        relative_error = float(max_relative_change/(1 - spectral_radius))
+        #print max_relative_change
+        #print spectral_radius
+        #print relative_error
         converged = (relative_error < tolerance) or (iteration > maxits)
-        converged = True
 
+        #print (iteration)
+        
         # print out Iteration number and convergence
         if (LOUD>0) or (converged and LOUD<0):
-            print("Iteration",iteration,": Relative Change =",change)
+            print("Iteration",iteration,": Relative error =",relative_error)
         if (iteration > maxits):
             print("Warning: Source Iteration did not converge")
                 
         # increment iteration number
         iteration += 1
-
+        
         # reset phi_old for next iteration
         phi_old_old = phi_old.copy()
         phi_old = phi.copy()
     
     # after convergence, calculate desired outputs
+    total_out_flow = print_balance_table(psi, psi_edge, phi, N, I, K, MU, A, V, sigma_a)
     #calculate_outputs()
 
-    return r_center, phi, error
+    return r_center, phi, error, total_out_flow
 #-------------------------------------------------------------------------------
 def set_area_and_volume(r, I):
     """Perform source iteration for single-group steady state problem
@@ -264,7 +279,7 @@ def set_alpha_beta(N, mu, mu_edge, w):
     alpha[N] = 0
     return alpha, beta
 #-------------------------------------------------------------------------------
-def set_boundaries(mu, w, N):
+def set_boundaries(mu, w, N, q, sigma_a, normalization, I):
     """Perform source iteration for single-group steady state problem
     Inputs:
         W:                  quadrature weight
@@ -274,20 +289,28 @@ def set_boundaries(mu, w, N):
         BCs:                Boundary Conditions
     """
     sum = 0.0
+    
+    if (normalization == 2):
+        for n in range (N):
+            if (mu[n] < 0.0):
+                # we want the incoming angular flux to be positive so use absolute value of mu
+                sum += abs(mu[n])*w[n]
 
-    for n in range (N):
-        if (mu[n] < 0.0):
-            # we want the incoming angular flux to be positive so use absolute value of mu
-            sum += abs(mu[n])*w[n]
+        current_incoming = 1.0
+        psi_incoming = current_incoming/sum
+        # N/2 because there are N/2 quadratures in the negative direction plus the starting directionsss
+        BCs = np.ones((N/2) + 1)*psi_incoming
+    else:
+        # quadrature weights sum to 2
+        # phi = sum(weights * psi)
+        tmp_phi = q[I-1]/sigma_a[I-1]
+        psi_incoming = tmp_phi*0.5
+        BCs = np.ones((N/2) + 1)*psi_incoming
 
-    current_incoming = 1.0
-    psi_incoming = current_incoming/sum
-    # N/2 because there are N/2 quadratures in the negative direction plus the starting directionsss
-    BCs = np.ones((N/2) + 1)*psi_incoming
     return BCs
 
 #-------------------------------------------------------------------------------
-def get_source(I, K, sigma_s, phi_old ):
+def get_source(I, K, sigma_s, phi_old, q ):
     """Perform source iteration for single-group steady state problem
     Inputs:
         I:                  number of zones
@@ -298,13 +321,12 @@ def get_source(I, K, sigma_s, phi_old ):
         source:             scattering source for new time step
     """
     source = np.zeros((I))
-    if (K == 0): source = sigma_s[:, 0]*phi_old[:,0]
-
+    if (K == 0): source = 0.5*(sigma_s[:, 0]*phi_old[:,0] + q)
     return source
 
 #-------------------------------------------------------------------------------
 
-def increment_phi(I, K, tmp_phi, tmp_psi, W, mu):
+def calculate_phi(psi, N, w, mu, K):
     """Perform source iteration for single-group steady state problem
     Inputs:
         I:                  number of zones
@@ -317,7 +339,9 @@ def increment_phi(I, K, tmp_phi, tmp_psi, W, mu):
         source:             scattering source for new time step
     """
     phi = np.zeros((I,(K+1)))
-    if (K == 0): phi[:,0] = tmp_phi[:,0] + tmp_psi*W
+    if (K == 0):
+        for n in range (N):
+            phi[:,0] += psi[:,n]*w[n]
     elif (K == 1):
         phi[:,0] = tmp_phi[:,0] + tmp_psi*W
         phi[:,1] = tmp_phi[:,1] + tmp_psi*W*mu
@@ -326,84 +350,196 @@ def increment_phi(I, K, tmp_phi, tmp_psi, W, mu):
 
 #-------------------------------------------------------------------------------
 
+def print_balance_table(psi, psi_edge, phi, N, I, K, mu, A, V, sigma_a):
+    """Perform source iteration for single-group steady state problem
+    Inputs:
+        I:                  number of zones
+        K:                  scattering order
+        N:                  number of angles
+        psi:                volume weighted angular flux
+        phi:                volume weighted scalar flux
+        mu:                 quadrature angles
+    Outputs:
+    """
+    total_in_flow = 0.0
+    total_out_flow = 0.0
+    total_absorption = 0.0
+    total_source_rate = 0.0
+    for n in range (N):
+        if (mu[n] < 0.0):
+            total_in_flow += psi_edge[I, n]*A[I]
+        else:
+            total_out_flow += psi_edge[I, n]*A[I]
+    for i in range (I):
+        total_absorption += phi[i]*V[i]*sigma_a[i]
+        total_source_rate += q[i]*V[i]
+
+    print "Total in flow = " + str(total_in_flow)
+    print "Total out flow = " + str(total_out_flow)
+    print "Total absorption = " + str(total_absorption)
+    print "Total source rate = " + str(total_source_rate)
+
+    return total_out_flow
+
+
+
+#-------------------------------------------------------------------------------
+
 # Inputs
-root = ET.parse('input.xml').getroot()
+def get_inputs(file):
+    root = ET.parse(file).getroot()
 
-# get common inputs
-common = root.find('common')
+    # get common inputs
+    common = root.find('common')
 
-# the outer radius of the sphere
-rb = float(common.find('outer_radius').text)
+    # the outer radius of the sphere
+    rb = float(common.find('outer_radius').text)
 
-# the number of directions (even only)
-N = int(common.find('n_angles').text)
+    # the number of directions (even only)
+    N = int(common.find('n_angles').text)
 
-# the number of cells
-I = int(common.find('n_cells').text)
+    # the number of cells
+    I = int(common.find('n_cells').text)
 
-# Acceleration (none/DSA)
-use_DSA = (common.find('use_DSA').text).lower() in ['1', 'y', 'yes', 'true', 't']
+    # Acceleration (none/DSA)
+    use_DSA = (common.find('use_DSA').text).lower() in ['1', 'y', 'yes', 'true', 't']
 
-# convergence tolerance
-tolerance = float(common.find('tolerance').text)
+    # convergence tolerance
+    tolerance = float(common.find('tolerance').text)
 
-# max iterations
-maxits = int(common.find('max_iterations').text)
-
-
-# get source inputs
-source = root.find('source')
-
-# the source type
-# 1 = constant isotropic distributed source
-# 2 = right isotropic boundary flux
-# 3 = right anisotropic boundary flux
-# 4 = constant isotropic distributed source / right isotropic boundary flux
-# 5 = constant isotropic distributed source / right anisotropic boundary flux
-type = int(source.find('source_type').text)
-assert (type <= 5)
-
-# source normalization method
-# 1 = point value
-# 2 = integrated source value
-normalization = int(source.find('normalization_method').text)
-assert (normalization <= 2)
-
-# source normalization values
-# for point, define the zeroth Legendre moment of the source and the zeroth Legendre moment of the incident angular flux
-# for integral, define the total source and the half-range current
-val1 = float(source.find('normalization_value_1').text)
-val2 = float(source.find('normalization_value_2').text)
-normalization_values = (val1, val2)
-
-# get cross section inputs
-xs = root.find('cross_sections')
-# sigma_a and sigma_t
-sigma_a = np.ones(I)*float(xs.find('sigma_a').text)
-sigma_t = np.ones(I)*float(xs.find('sigma_t').text)
-assert(all(i >= j for j in sigma_a for i in sigma_t))
-
-# Pn scattering order, K
-K = int(xs.find('scattering_order').text)
-
-# if K is > 0, anisotropic cross section coefficients
-sigma_s = np.zeros((I, (K+1)))
-if (K>0):
-    sigma_s[:, 0] = sigma_t - sigma_a
-    for k in range (1, (K+1)):
-        key = "sigma_" + str(k)
-        
-        # check existance of all the required scattering coefficients
-        test = (xs.find(key))
-        if (test == None):
-            print ("Error: Did not input enough scattering coefficients into xml file")
-            exit(1)
-
-        sigma_s[:, k] = float(xs.find(key).text)
-else:
-    sigma_s[:, 0] = sigma_t - sigma_a
+    # max iterations
+    maxits = int(common.find('max_iterations').text)
 
 
+    # get source inputs
+    source = root.find('source')
+
+    # the source type
+    # 1 = constant isotropic distributed source
+    # 2 = right isotropic boundary flux
+    # 3 = right anisotropic boundary flux
+    # 4 = constant isotropic distributed source / right isotropic boundary flux
+    # 5 = constant isotropic distributed source / right anisotropic boundary flux
+    type = int(source.find('source_type').text)
+    assert (type <= 5)
+
+    # source normalization method
+    # 1 = point value
+    # 2 = integrated source value
+    normalization = int(source.find('normalization_method').text)
+    assert (normalization <= 2)
+
+    # source normalization values
+    # for point, define the zeroth Legendre moment of the source and the zeroth Legendre moment of the incident angular flux
+    # for integral, define the total source and the half-range current
+    val1 = float(source.find('normalization_value_1').text)
+    val2 = float(source.find('normalization_value_2').text)
+    normalization_values = (val1, val2)
+
+    # get cross section inputs
+    xs = root.find('cross_sections')
+    # sigma_a and sigma_t
+    sigma_a = np.ones(I)*float(xs.find('sigma_a').text)
+    sigma_t = np.ones(I)*float(xs.find('sigma_t').text)
+    assert(all(i >= j for j in sigma_a for i in sigma_t))
+
+    # Pn scattering order, K
+    K = int(xs.find('scattering_order').text)
+
+    # if K is > 0, anisotropic cross section coefficients
+    sigma_s = np.zeros((I, (K+1)))
+    if (K>0):
+        sigma_s[:, 0] = sigma_t - sigma_a
+        for k in range (1, (K+1)):
+            key = "sigma_" + str(k)
+            
+            # check existance of all the required scattering coefficients
+            test = (xs.find(key))
+            if (test == None):
+                print ("Error: Did not input enough scattering coefficients into xml file")
+                exit(1)
+
+            sigma_s[:, k] = float(xs.find(key).text)
+    else:
+        sigma_s[:, 0] = sigma_t - sigma_a
+
+    return rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K
+
+#-------------------------------------------------------------------------------
+
+# Problems runs!
+
+# pure absorption
+file = 'input.xml'
+rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
 hr = rb/I
 q = np.zeros((I))
-r, phi, error = source_iteration(I, hr, q, sigma_t, sigma_s, N, K, tolerance = 1.0e-8, maxits = 100, LOUD=False )
+r, phi, error, total_out_flow = source_iteration(I, hr, q, sigma_t, sigma_a, sigma_s, N, K, tolerance = tolerance, maxits = maxits, LOUD=True )
+
+plt.figure()
+plt.plot(r, phi)
+plt.xlabel("radius")
+plt.ylabel("flux")
+
+# pure scatter
+file = 'pure_scatter.xml'
+rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+hr = rb/I
+q = np.zeros((I))
+r, phi, error, total_out_flow = source_iteration(I, hr, q, sigma_t, sigma_a, sigma_s, N, K, tolerance = tolerance, maxits = maxits, LOUD=True )
+
+plt.plot(r, phi)
+plt.xlabel("radius")
+plt.ylabel("flux")
+plt.title("Pure absorber vs. Pure scatter")
+
+# Problem 17
+
+file = 'problem17_parta.xml'
+rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+hr = rb/I
+q = np.zeros((I))
+r, phi, error, total_out_flow_50 = source_iteration(I, hr, q, sigma_t, sigma_a, sigma_s, N, K, tolerance = tolerance, maxits = maxits, LOUD=True )
+
+plt.figure()
+plt.plot(r, phi)
+plt.xlabel("radius")
+plt.ylabel("flux")
+
+file = 'problem17_parta2.xml'
+rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+hr = rb/I
+q = np.zeros((I))
+r, phi, error, total_out_flow_100 = source_iteration(I, hr, q, sigma_t, sigma_a, sigma_s, N, K, tolerance = tolerance, maxits = maxits, LOUD=True )
+
+plt.plot(r,phi)
+
+file = 'problem17_parta3.xml'
+rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+hr = rb/I
+q = np.zeros((I))
+r, phi, error, total_out_flow_200 = source_iteration(I, hr, q, sigma_t, sigma_a, sigma_s, N, K, tolerance = tolerance, maxits = maxits, LOUD=True )
+
+plt.plot(r,phi)
+
+xi = np.abs(total_out_flow_50 - total_out_flow_100)/np.abs(total_out_flow_100 - total_out_flow_200)
+print xi
+
+
+# Problem 17 part b
+file = 'problem17_partb.xml'
+rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+hr = rb/I
+q = np.ones((I))
+r, phi, error, total_out_flow = source_iteration(I, hr, q, sigma_t, sigma_a, sigma_s, N, K, tolerance = tolerance, maxits = maxits, LOUD=True )
+
+plt.figure()
+plt.plot(r, phi)
+plt.xlabel("radius")
+plt.ylabel("flux")
+
+plt.plot(r, q/sigma_a)
+
+plt.show()
+
+

@@ -21,7 +21,7 @@
     <!-- Information about material cross sections-->
     <cross_sections>
         <scattering_order>0</scattering_order>
-        <sigma_a>1.0</sigma_a>
+        <sigma_a>0.0</sigma_a>
         <sigma_t>1.0</sigma_t>
         <sigma_1>0.0</sigma_1>
     </cross_sections>
