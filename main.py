@@ -8,7 +8,7 @@ import scipy.sparse.linalg as spla
 import xml.etree.ElementTree as ET
 
 #-------------------------------------------------------------------------------
-def sweep(I, hr, q, sigma_t, mu, boundary, n, N):
+def sweep(I, hr, q, sigma_t, mu, BCs, N, gamma, alpha, beta, w, A, V):
     """Compute a transport sweep for a given
     Inputs:
         I:               number of zones 
@@ -23,30 +23,75 @@ def sweep(I, hr, q, sigma_t, mu, boundary, n, N):
         psi:             value of angular flux in each zone
     """
 
-    assert(np.abs(mu) > 1e-10)
+    assert(all(abs(n) > 1e-10 for n in mu))
 
-    # intialize psi
-    psi = np.zeros((I, N))
+    # intialize psi at the quadrature points
+    psi_edge = np.zeros(((I+1), (N)))
+    psi_hat = np.zeros((I, (N)))
+    psi = np.zeros((I, (N)))
     
-    # set the inverse of the cell width
-    ihr =  1/hr
+    # initialze psi at the quadrature edges
+    psi_edge_edge = np.zeros(((I+1), (N+1)))
+    psi_hat_edge = np.zeros((I, (N+1)))
+    psi_angle_edge = np.zeros((I, (N+1)))
     
-    # determine if sweeping with positive or negative mu
-    # perform sweep
-    if (mu > 0):
-        # if marching in the positive direction the angular flux in the first cell is equal to the angular flux
-        # angular flux with the direction -1*mu. This corresponds to psi[0,(N-n-1)]
-        psi_minus = psi[0,(N-n-1)]
-        for i in range(I):
-            psi[i] =  (q[i]*0.5 + mu*psi_minus*ihr)/(sigma_t[i] + mu*ihr)
-            psi_minus = psi[i]
-    else:
-        psi_plus = boundary
-        # sweep through all cells except the first
-        for i in reversed(range(1, I)):
-            psi[i] = (q[i]*0.5 - mu*psi_plus*ihr)/(sigma_t[i] - mu*ihr)
-            psi_plus = psi[i]
-        # now use a different discretization to solve for the flux in the first cell
+    # determine starting direction flux
+    psi_edge_edge[I, 0] = BCs[0]
+    for i in reversed(range(I)):
+        psi_edge_edge[i, 0] = (q[i] + psi_edge_edge[i+1,0]*(1 - 0.5*sigma_t[i]*hr))/(1 + 0.5*sigma_t[i]*hr)
+        psi_hat_edge[i,0] = psi_edge_edge[i+1, 0]*gamma[i, 0] + psi_edge_edge[i, 0]*(1 - gamma[i, 0])
+        psi_angle_edge[i,0] = psi_edge_edge[i+1, 0]*gamma[i, 1] + psi_edge_edge[i, 0]*(1 - gamma[i, 1])
+    
+    
+    #print psi_edge_edge[:,0]
+    #print psi_hat_edge[:,0]
+    #print psi_angle_edge[:,0]
+    # perform sweeps
+    for n in range(N):
+        # for negative angle mu's
+        if (mu[n] < 0):
+            psi_edge[I, n] = BCs[(n+1)]
+            # sweep through all cells
+            for i in reversed(range(0, I)):
+                if (i > 0):
+                    C1 = -mu[n]*A[i] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(1 - gamma[i,0])/beta[n] + sigma_t[i]*V[i]*(1 - gamma[i,1])
+                    C2 = mu[n]*A[i+1] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(gamma[i,0])/beta[n] + sigma_t[i]*V[i]*(gamma[i,1])
+                    C3 = 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(1 - beta[n])*psi_angle_edge[i, n]/beta[n] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n]*psi_hat_edge[i,n]
+                    psi_edge[i,n] = (q[i]*V[i] - psi_edge[i+1,n]*C2 + C3)/C1
+                    psi_hat[i,n] = psi_edge[i+1, 0]*gamma[i, 0] + psi_edge[i, 0]*(1 - gamma[i, 0])
+                    psi[i,n] = psi_edge[i+1, 0]*gamma[i, 1] + psi_edge[i, 0]*(1 - gamma[i, 1])
+                    psi_hat_edge[i,(n+1)] = (psi_hat[i,n] - (1 - beta[n])*psi_hat_edge[i,n])/beta[n]
+                
+                    # see if original equation is satisfied
+                    tmp_psi = (psi_hat[i,n] - (1 - beta[n])*psi_hat_edge[i,n])/beta[n]
+                    left_side = mu[n]*(A[i+1]*psi_edge[i+1,n] - A[i]*psi_edge[i,n]) + 0.5*(A[i+1] - A[i])/w[n]*(alpha[n+1]*psi_hat_edge[i,n+1] - alpha[n]*psi_hat_edge[i,n])
+                    right_side = q[i]*V[i] - sigma_t[i]*V[i]*psi[i,n]
+                    print "Left side = " + str(left_side)
+                    print "Right side = " + str(right_side)
+                    assert(left_side == right_side)
+                    
+                 # do something different for the first cell
+                else:
+                    gamma_tilde = (psi_edge[1,n]*2/3 + psi_edge_edge[0,0]*1/3)/(psi_edge[1,n]*3/4 + psi_edge_edge[0,0]*1/4)
+                    C1 = sigma_t[i]*V[i] + A[i+1]/(2*w[n])*alpha[n+1]*gamma_tilde/beta[n]
+                    C2 = alpha[n]*psi_hat_edge[i,n] - mu[n]*A[i+1]*psi_edge[i+1,n] + A[i+1]/(2*w[n])*alpha[n+1]*(1 - beta[n])/beta[n]*psi_hat_edge[i,n]
+                    print C2
+                    psi[i,n] = (q[i]*V[i] + C2)/C1
+                    psi_edge[i,n] = (psi[i,n] - psi_edge[i+1,n]*gamma[i,1])/(1 - gamma[i,1])
+                    psi_hat[i,n] = (psi_edge[i+1,n]*gamma[i,0] + (1 - gamma[i,0])*psi_edge[i,n])
+            print psi_edge
+
+            # now use a different discretization to solve for the flux in the first cell
+    
+        # perform sweeps for negative angle mu's
+        else:
+            psi_edge[0, n] = psi_edge_edge[0, 0]
+            # sweep through all cells
+            for i in range(1, (I+1)):
+                #print i
+                break
+
+
 
     return psi
 #-------------------------------------------------------------------------------
@@ -72,8 +117,6 @@ def source_iteration(I, hr, q, sigma_t, sigma_s, N, K, tolerance = 1.0e-8, maxit
     r_edge = np.linspace(0, rb, (I+1))
     
     # initialize psi_edge, psi_hat, psi
-    psi_edge = np.zeros(((I+1), N))
-    psi_hat = np.zeros((I, N))
     psi = np.zeros((I, N))
     
     # intialize phi and phi old
@@ -115,23 +158,25 @@ def source_iteration(I, hr, q, sigma_t, sigma_s, N, K, tolerance = 1.0e-8, maxit
 
     # start source iteration
     while not(converged):
-
+        
         phi = np.zeros((I, (K+1)))
         tmp_phi = phi.copy()
-        
+        source = get_source(I, K, sigma_s, phi_old)
         # sweep over each direction
-        for n in range(N):
-            print (n)
-            source = get_source(I, K, sigma_s, phi_old)
-            tmp_psi = sweep(I,hr,q + source,sigma_t,MU[n],BCs[n], n, N)
-            phi = increment_phi(I, K, tmp_phi, tmp_psi, W[n], MU[n])
-            tmp_phi = phi.copy()
-        
+        psi = sweep(I,hr,q+source,sigma_t,MU,BCs, N, gamma, alpha, beta, W, A, V)
+#        for n in range(N):
+#            print (n)
+#            source = get_source(I, K, sigma_s, phi_old)
+#            tmp_psi = sweep(I,hr,q + source,sigma_t,MU[n],BCs[n], n, N)
+#            phi = increment_phi(I, K, tmp_phi, tmp_psi, W[n], MU[n])
+#            tmp_phi = phi.copy()
+
         # check convergence
         max_relative_change = np.max(np.abs((phi[:,0] - phi_old[:,0])/phi[:,0]))
         spectral_radius = np.sum(np.abs(phi[:,0] - phi_old[:,0]))/np.sum(np.abs(phi_old[:,0] - phi_old_old[:,0]))
         relative_error = max_relative_change/(1 - spectral_radius)
         converged = (relative_error < tolerance) or (iteration > maxits)
+        converged = True
 
         # print out Iteration number and convergence
         if (LOUD>0) or (converged and LOUD<0):
@@ -216,8 +261,7 @@ def set_alpha_beta(N, mu, mu_edge, w):
         alpha[n+1] = alpha[n] - 2*mu[n]*w[n]
         beta[n] = (mu[n] - mu_edge[n])/(mu_edge[n+1] - mu_edge[n])
 
-    print alpha
-    print beta
+    alpha[N] = 0
     return alpha, beta
 #-------------------------------------------------------------------------------
 def set_boundaries(mu, w, N):
@@ -238,7 +282,8 @@ def set_boundaries(mu, w, N):
 
     current_incoming = 1.0
     psi_incoming = current_incoming/sum
-    BCs = np.ones(N/2)*psi_incoming
+    # N/2 because there are N/2 quadratures in the negative direction plus the starting directionsss
+    BCs = np.ones((N/2) + 1)*psi_incoming
     return BCs
 
 #-------------------------------------------------------------------------------
