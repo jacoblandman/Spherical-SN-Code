@@ -3,26 +3,26 @@
     <!-- Information Common to the problem -->
     <common>
         <outer_radius>1.0</outer_radius>
-        <n_angles>4</n_angles>
+        <n_angles>8</n_angles>
         <n_cells>100</n_cells>
         <use_DSA>FALSE</use_DSA>
         <tolerance>1.0E-4</tolerance>
-        <max_iterations>500</max_iterations>
+        <max_iterations>10000</max_iterations>
     </common>
     
     <!-- Information about the source -->
     <source>
-        <source_type>2</source_type>
-        <normalization_method>2</normalization_method>
+        <source_type>1</source_type>
+        <normalization_method>1</normalization_method>
         <normalization_value_1>1.0</normalization_value_1>
         <normalization_value_2>1.0</normalization_value_2>
     </source>
     
     <!-- Information about material cross sections-->
     <cross_sections>
-        <scattering_order>3</scattering_order>
-        <sigma_a>1.0</sigma_a>
-        <sigma_t>2.0</sigma_t>
+        <scattering_order>0</scattering_order>
+        <sigma_a>0.0</sigma_a>
+        <sigma_t>30.0</sigma_t>
         <sigma_1>1.0</sigma_1>
         <sigma_2>1.0</sigma_2>
         <sigma_3>1.0</sigma_3>

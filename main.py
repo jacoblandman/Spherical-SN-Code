@@ -49,7 +49,7 @@ def sweep(I, hr, q, sigma_t, mu, BCs, N, gamma, alpha, beta, w, A, V):
     # determine starting direction flux
     psi_edge_edge[I, 0] = BCs[0]
     for i in reversed(range(I)):
-        psi_edge_edge[i, 0] = (q[i]*hr + psi_edge_edge[i+1,0]*(1 - 0.5*sigma_t[i]*hr))/(1 + 0.5*sigma_t[i]*hr)
+        psi_edge_edge[i, 0] = (q[i, 0]*hr + psi_edge_edge[i+1,0]*(1 - 0.5*sigma_t[i]*hr))/(1 + 0.5*sigma_t[i]*hr)
         psi_hat_edge[i,0] = psi_edge_edge[i+1, 0]*gamma[i, 0] + psi_edge_edge[i, 0]*(1 - gamma[i, 0])
         psi_angle_edge[i,0] = psi_edge_edge[i+1, 0]*gamma[i, 1] + psi_edge_edge[i, 0]*(1 - gamma[i, 1])
     
@@ -64,7 +64,7 @@ def sweep(I, hr, q, sigma_t, mu, BCs, N, gamma, alpha, beta, w, A, V):
                     C1 = -mu[n]*A[i] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(1 - gamma[i,0])/beta[n] + sigma_t[i]*V[i]*(1 - gamma[i,1])
                     C2 = mu[n]*A[i+1] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(gamma[i,0])/beta[n] + sigma_t[i]*V[i]*(gamma[i,1])
                     C3 = 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(1 - beta[n])*psi_hat_edge[i, n]/beta[n] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n]*psi_hat_edge[i,n]
-                    psi_edge[i,n] = (q[i]*V[i] - psi_edge[i+1,n]*C2 + C3)/C1
+                    psi_edge[i,n] = (q[i, (n+1)]*V[i] - psi_edge[i+1,n]*C2 + C3)/C1
                     psi_hat[i,n] = psi_edge[i+1, n]*gamma[i, 0] + psi_edge[i, n]*(1 - gamma[i, 0])
                     psi[i,n] = psi_edge[i+1, n]*gamma[i, 1] + psi_edge[i, n]*(1 - gamma[i, 1])
                     psi_hat_edge[i,(n+1)] = (psi_hat[i,n] - (1 - beta[n])*psi_hat_edge[i,n])/beta[n]
@@ -81,7 +81,7 @@ def sweep(I, hr, q, sigma_t, mu, BCs, N, gamma, alpha, beta, w, A, V):
                     gamma_tilde = (psi_edge[i+1,n]*gamma[0,0] + psi_edge_edge[0,0]*(1 - gamma[0,0]))/(psi_edge[i+1,n]*gamma[0,1] + psi_edge_edge[0,0]*(1 - gamma[0,1]))
                     C1 = sigma_t[i]*V[i] + A[i+1]/(2*w[n])*alpha[n+1]*gamma_tilde/beta[n]
                     C2 = A[i+1]/(2*w[n])*alpha[n]*psi_hat_edge[i,n] - mu[n]*A[i+1]*psi_edge[i+1,n] + A[i+1]/(2*w[n])*alpha[n+1]*(1 - beta[n])/beta[n]*psi_hat_edge[i,n]
-                    psi[i,n] = (q[i]*V[i] + C2)/C1
+                    psi[i,n] = (q[i, (n+1)]*V[i] + C2)/C1
                     psi_hat[i,n] = gamma_tilde*psi[i,n]
                     
                     # set psi_edge to the starting direction flux
@@ -103,7 +103,7 @@ def sweep(I, hr, q, sigma_t, mu, BCs, N, gamma, alpha, beta, w, A, V):
                 C1 = -mu[n]*A[i] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(1 - gamma[i,0])/beta[n] + sigma_t[i]*V[i]*(1 - gamma[i,1])
                 C2 = mu[n]*A[i+1] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(gamma[i,0])/beta[n] + sigma_t[i]*V[i]*(gamma[i,1])
                 C3 = 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n+1]*(1 - beta[n])*psi_hat_edge[i, n]/beta[n] + 1/(2*w[n])*(A[(i+1)] - A[i])*alpha[n]*psi_hat_edge[i,n]
-                psi_edge[i+1,n] = (q[i]*V[i] - psi_edge[i,n]*C1 + C3)/C2
+                psi_edge[i+1,n] = (q[i, (n+1)]*V[i] - psi_edge[i,n]*C1 + C3)/C2
                 psi_hat[i,n] = psi_edge[i+1, n]*gamma[i, 0] + psi_edge[i, n]*(1 - gamma[i, 0])
                 psi[i,n] = psi_edge[i+1, n]*gamma[i, 1] + psi_edge[i, n]*(1 - gamma[i, 1])
                 psi_hat_edge[i,(n+1)] = (psi_hat[i,n] - (1 - beta[n])*psi_hat_edge[i,n])/beta[n]
@@ -187,7 +187,7 @@ def source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization
         phi = np.zeros((I, (K+1)))
         
         # calculate scattering source
-        source = get_source(I, K, sigma_s, phi_old, q)
+        source = get_source(I, K, sigma_s, phi_old, q, MU, N)
         
         # sweep over each direction
         psi, psi_edge = sweep(I,hr,source ,sigma_t,MU,BCs, N, gamma, alpha, beta, W, A, V)
@@ -401,7 +401,7 @@ def set_sources(mu, w, N, type, normalization, normalization_values, I, V):
     return BCs, q
 
 #-------------------------------------------------------------------------------
-def get_source(I, K, sigma_s, phi_old, q ):
+def get_source(I, K, sigma_s, phi_old, q, mu, N ):
     """determine the new total source (scattering + q)
     Inputs:
         I:                  number of zones
@@ -409,11 +409,19 @@ def get_source(I, K, sigma_s, phi_old, q ):
         sigma_s:            array of scattering cross-sections
         phi_old:            scalar flux from previous time step in each zone
         q:                  array of source within each zone
+        mu:                 quadrature angles
+        N:                  number of quadrature angles
     Outputs:
         source:             scattering source for new time step + q
     """
-    source = np.zeros((I))
-    if (K == 0): source = 0.5*(sigma_s[:, 0]*phi_old[:,0] + q)
+    source = np.zeros((I, N+1))
+    for k in range (K+1):
+        source[:,0] += 0.5*(2*k + 1)*(sigma_s[:,k]*phi_old[:,k])*special.eval_legendre(k,-1.0)
+    source[:,0] += 0.5*q
+    for n in range (1, N+1):
+        for k in range (K+1):
+            source[:,n] += 0.5*(2*k + 1)*(sigma_s[:,k]*phi_old[:,k])*special.eval_legendre(k,mu[n - 1])
+        source[:,n] += 0.5*q
     return source
 
 #-------------------------------------------------------------------------------
@@ -431,12 +439,10 @@ def calculate_phi(psi, N, w, mu, K):
         phi:                value of the volume-weighted scalar flux in each zone
     """
     phi = np.zeros((I,(K+1)))
-    if (K == 0):
+
+    for k in range (K+1):
         for n in range (N):
-            phi[:,0] += psi[:,n]*w[n]
-    elif (K == 1):
-        phi[:,0] = tmp_phi[:,0] + tmp_psi*W
-        phi[:,1] = tmp_phi[:,1] + tmp_psi*W*mu
+            phi[:,k] += psi[:,n]*w[n]*special.eval_legendre(k,mu[n])
 
     return phi
 
@@ -472,8 +478,8 @@ def print_balance_table(psi, psi_edge, phi, N, I, K, mu, A, V, sigma_a, w, q):
         else:
             total_out_flow += psi_edge[I, n]*A[I]*np.abs(mu[n])*w[n]
     for i in range (I):
-        total_absorption += phi[i]*V[i]*sigma_a[i]
-        total_source_rate += q[i]*V[i]
+            total_absorption += phi[i,0]*V[i]*sigma_a[i]
+            total_source_rate += q[i]*V[i]
 
     print "Total in flow = " + str(total_in_flow)
     print "Total out flow = " + str(total_out_flow)
@@ -553,7 +559,7 @@ def get_inputs(file):
     assert (normalization <= 2)
 
     # source normalization values
-    # for point, define the zeroth Legendre moment of the source and the zeroth Legendre moment of the incident angular flux
+    # for point, define the zeroth Legendre moment of the source q/cm^3 and the zeroth Legendre moment of the incident angular flux
     # for integral, define the total source and the half-range current
     val1 = float(source.find('normalization_value_1').text)
     val2 = float(source.find('normalization_value_2').text)
@@ -593,24 +599,24 @@ def get_inputs(file):
 # Problems runs!
 
 # pure absorption
-file = 'input.xml'
-rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
-r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
-
-plt.figure()
-plt.plot(r, phi)
-plt.xlabel("radius")
-plt.ylabel("flux")
-
-# pure scatter
-file = 'pure_scatter.xml'
-rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
-r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
-
-plt.plot(r, phi)
-plt.xlabel("radius")
-plt.ylabel("flux")
-plt.title("Pure absorber vs. Pure scatter")
+#file = 'input.xml'
+#rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+#r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
+#
+#plt.figure()
+#plt.plot(r, phi)
+#plt.xlabel("radius")
+#plt.ylabel("flux")
+#
+## pure scatter
+#file = 'pure_scatter.xml'
+#rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+#r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
+#
+#plt.plot(r, phi)
+#plt.xlabel("radius")
+#plt.ylabel("flux")
+#plt.title("Pure absorber vs. Pure scatter")
 
 # Problem 17 part a
 
@@ -630,6 +636,9 @@ rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values,
 r, phi, total_out_flow_100 = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
 
 plt.plot(r,phi)
+
+phi_parta = np.zeros((I))
+phi_parta = phi.copy()
 
 # 200 cells
 file = 'problem17_parta3.xml'
@@ -656,6 +665,27 @@ plt.ylim(0, 2)
 q = np.ones((I))
 plt.plot(r, q/sigma_a)
 
+
+# Problem 17 part c
+file = 'problem17_partc.xml'
+rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
+
+plt.figure()
+plt.plot(r, phi_parta, label="Part a")
+plt.plot(r, phi[:,0], label="Higher order scatter")
+plt.xlabel("radius")
+plt.ylabel("flux")
+plt.legend(loc="best")
+
+## Problem 17 part d
+#file = 'problem17_partd.xml'
+#rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+#r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
+#
+#plt.figure()
+#plt.plot(r, phi[:,0], label="")
+#plt.xlabel("radius")
+#plt.ylabel("flux")
+#plt.legend(loc="best")
 plt.show()
-
-
