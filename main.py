@@ -592,31 +592,75 @@ def get_inputs(file):
     else:
         sigma_s[:, 0] = sigma_t - sigma_a
 
+    print_inputs(rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K)
     return rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K
 
 #-------------------------------------------------------------------------------
 
-# Problems runs!
+# Print Inputs
+def print_inputs(rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K):
+    """ Get the inputs for the problem
+    Inputs:
+        rb:                         outer boundary of the problem
+         N:                         The number of angular quadratures
+         I:                         The number of cells
+         use_DSA:                   whether or not using diffusion synthetic accerleration
+         tolerance:                 tolerance for source iteration
+         maxits:                    max number of iterations for source iteration
+         type:                      source type
+         normalization:             point or integral normalization
+         normalization_values:      normalization values
+         sigma_a:                   array of absorption cross section
+         sigma_t:                   array of total cross section
+         sigma_s:                   array of scattering cross section
+         K:                         scattering order
+    """
+    
+    print "     .-')     .-')  .-. .-')"
+    print "( OO ).  ( OO ).\  ( OO )"
+    print "(_)---\_)(_)---\_);-----.\\"
+    print "/    _ | /    _ | | .-.  |"
+    print "\  :` `. \  :` `. | '-' /_)"
+    print " '..`''.) '..`''.)| .-. `."
+    print ".-._)   \.-._)   \| |  \  |"
+    print "\       /\       /| '--'  /"
+    print " `-----'  `-----' `------'"
+    
+    print ""
 
-# pure absorption
-#file = 'input.xml'
-#rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
-#r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
-#
-#plt.figure()
-#plt.plot(r, phi)
-#plt.xlabel("radius")
-#plt.ylabel("flux")
-#
-## pure scatter
-#file = 'pure_scatter.xml'
-#rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
-#r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
-#
-#plt.plot(r, phi)
-#plt.xlabel("radius")
-#plt.ylabel("flux")
-#plt.title("Pure absorber vs. Pure scatter")
+    print "Inputs".center(93)
+    print "---------------------------------------------------------------------------------------------".center(85)
+    print "Outer Boundary:".rjust(31) + "|".center(31) + str(rb).ljust(20)
+    print "Number of Angles:".rjust(31) + "|".center(31) + str(N).ljust(20)
+    print "Number of Cells:".rjust(31) + "|".center(31) + str(I).ljust(20)
+    print "Using DSA:".rjust(31) + "|".center(31) + str(use_DSA).ljust(20)
+    print "Tolerance:".rjust(31) + "|".center(31) + str(tolerance).ljust(20)
+    print "Max Iterations:".rjust(31) + "|".center(31) + str(maxits).ljust(20)
+    if (type == 1): s = "Constant isotropic distributed source (vacuum boundary)"
+    elif (type == 2): s = "Right isotropic boundary flux"
+    elif (type == 3): s = "Right anisotropic boundary flux"
+    elif (type == 4): s = "Constant isotropic distributed source / right isotropic boundary flux"
+    else: s = "Constant isotropic distributed source / right anisotropic boundary flux"
+    print "Source Type:".rjust(31) + "|".center(31) + str(s).ljust(20)
+    if (normalization == 1): s = "Point"
+    else: s = "Integral"
+    print "Normalization Type:".rjust(31) + "|".center(31) + str(s).ljust(20)
+    print "Source Value:".rjust(31) + "|".center(31) + str(normalization_values[0]).ljust(20)
+    print "Boundary Value:".rjust(31) + "|".center(31) + str(normalization_values[1]).ljust(20)
+    print "Scattering Order:".rjust(31) + "|".center(31) + str(K).ljust(20)
+    print "Absorption Cross Section:".rjust(31) + "|".center(31) + str(sigma_a[0]).ljust(20)
+    print "Total Cross Section:".rjust(31) + "|".center(31) + str(sigma_t[0]).ljust(20)
+    for k in range ((K+1)):
+        s = "Scattering Cross Section k = " + str(k) + ":"
+        print s.rjust(31) + "|".center(31) + str(sigma_s[0,k]).ljust(20)
+    print ""
+
+
+
+
+#-------------------------------------------------------------------------------
+
+# Problems runs!
 
 # Problem 17 part a
 
@@ -625,59 +669,59 @@ file = 'problem17_parta.xml'
 rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
 r, phi, total_out_flow_50 = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
 
-plt.figure()
-plt.plot(r, phi)
-plt.xlabel("radius")
-plt.ylabel("flux")
-
-# 100 cells
-file = 'problem17_parta2.xml'
-rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
-r, phi, total_out_flow_100 = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
-
-plt.plot(r,phi)
-
-phi_parta = np.zeros((I))
-phi_parta = phi.copy()
-
-# 200 cells
-file = 'problem17_parta3.xml'
-rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
-r, phi, total_out_flow_200 = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
-
-plt.plot(r,phi)
-
-# calculate xi
-xi = np.abs(total_out_flow_50 - total_out_flow_100)/np.abs(total_out_flow_100 - total_out_flow_200)
-print "Xi = " +str(xi)
-
-
-# Problem 17 part b
-file = 'problem17_partb.xml'
-rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
-r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
-
-plt.figure()
-plt.plot(r, phi)
-plt.xlabel("radius")
-plt.ylabel("flux")
-plt.ylim(0, 2)
-q = np.ones((I))
-plt.plot(r, q/sigma_a)
-
-
+#plt.figure()
+#plt.plot(r, phi)
+#plt.xlabel("radius")
+#plt.ylabel("flux")
+#
+## 100 cells
+#file = 'problem17_parta2.xml'
+#rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+#r, phi, total_out_flow_100 = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
+#
+#plt.plot(r,phi)
+#
+#phi_parta = np.zeros((I))
+#phi_parta = phi.copy()
+#
+## 200 cells
+#file = 'problem17_parta3.xml'
+#rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+#r, phi, total_out_flow_200 = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
+#
+#plt.plot(r,phi)
+#
+## calculate xi
+#xi = np.abs(total_out_flow_50 - total_out_flow_100)/np.abs(total_out_flow_100 - total_out_flow_200)
+#print "Xi = " +str(xi)
+#
+#
+## Problem 17 part b
+#file = 'problem17_partb.xml'
+#rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+#r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
+#
+#plt.figure()
+#plt.plot(r, phi)
+#plt.xlabel("radius")
+#plt.ylabel("flux")
+#plt.ylim(0, 2)
+#q = np.ones((I))
+#plt.plot(r, q/sigma_a)
+#
+#
 # Problem 17 part c
 file = 'problem17_partc.xml'
 rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
 r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
-
-plt.figure()
-plt.plot(r, phi_parta, label="Part a")
-plt.plot(r, phi[:,0], label="Higher order scatter")
-plt.xlabel("radius")
-plt.ylabel("flux")
-plt.legend(loc="best")
-
+#
+#plt.figure()
+#plt.plot(r, phi_parta, label="Part a")
+#plt.plot(r, phi[:,0], label="Higher order scatter")
+#plt.xlabel("radius")
+#plt.ylabel("flux")
+#plt.legend(loc="best")
+#
 ## Problem 17 part d
 #file = 'problem17_partd.xml'
 #rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
@@ -688,4 +732,4 @@ plt.legend(loc="best")
 #plt.xlabel("radius")
 #plt.ylabel("flux")
 #plt.legend(loc="best")
-plt.show()
+#plt.show()
