@@ -14,12 +14,14 @@
 		AE9F0DA71CBC5E2400B99947 /* problem17_parta2.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = problem17_parta2.xml; sourceTree = "<group>"; };
 		AE9F0DA81CBC5E3600B99947 /* problem17_parta3.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = problem17_parta3.xml; sourceTree = "<group>"; };
 		AE9F0DA91CBC606400B99947 /* problem17_partb.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = problem17_partb.xml; sourceTree = "<group>"; };
+		AE9F0DAA1CBEB9B900B99947 /* problem17_partc.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = problem17_partc.xml; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		AE9F0D971CB440E500B99947 = {
 			isa = PBXGroup;
 			children = (
+				AE9F0DAA1CBEB9B900B99947 /* problem17_partc.xml */,
 				AE9F0DA91CBC606400B99947 /* problem17_partb.xml */,
 				AE9F0DA81CBC5E3600B99947 /* problem17_parta3.xml */,
 				AE9F0DA71CBC5E2400B99947 /* problem17_parta2.xml */,

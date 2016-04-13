@@ -12,18 +12,20 @@
     
     <!-- Information about the source -->
     <source>
-        <source_type>4</source_type>
-        <normalization_method>1</normalization_method>
+        <source_type>2</source_type>
+        <normalization_method>2</normalization_method>
         <normalization_value_1>1.0</normalization_value_1>
         <normalization_value_2>1.0</normalization_value_2>
     </source>
     
     <!-- Information about material cross sections-->
     <cross_sections>
-        <scattering_order>0</scattering_order>
+        <scattering_order>3</scattering_order>
         <sigma_a>1.0</sigma_a>
-        <sigma_t>3.0</sigma_t>
-        <sigma_1>0.0</sigma_1>
+        <sigma_t>2.0</sigma_t>
+        <sigma_1>1.0</sigma_1>
+        <sigma_2>1.0</sigma_2>
+        <sigma_3>1.0</sigma_3>
     </cross_sections>
     
 </prototype>
