@@ -112,7 +112,8 @@ def sweep(I, hr, q, sigma_t, mu, BCs, N, gamma, alpha, beta, w, A, V):
                 #left_side = mu[n]*(A[i+1]*psi_edge[i+1,n] - A[i]*psi_edge[i,n]) + 0.5*(A[i+1] - A[i])/w[n]*(alpha[n+1]*psi_hat_edge[i,n+1] - alpha[n]*psi_hat_edge[i,n])
                 #right_side = q[i]*V[i] - sigma_t[i]*V[i]*psi[i,n]
                 #assert(np.abs(left_side - right_side) < 1E-11*np.abs(left_side))
-            
+
+    np.set_printoptions(formatter={'float': lambda x: "{0:0.15f}".format(x)})
     return psi, psi_edge
 
 #-------------------------------------------------------------------------------
@@ -169,7 +170,7 @@ def source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization
 
     # set alpha and beta
     alpha, beta = set_alpha_beta(N, MU, MU_edge, W)
-    
+
     # initialize convergence boolean to False
     converged = False
 
@@ -218,7 +219,7 @@ def source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization
     
     # after convergence, calculate desired outputs
     total_out_flow = print_balance_table(psi, psi_edge, phi, N, I, K, MU, A, V, sigma_a, W, q)
-
+    
     return r_center, phi, total_out_flow
 #-------------------------------------------------------------------------------
 def set_area_and_volume(r, I):
@@ -490,6 +491,32 @@ def print_balance_table(psi, psi_edge, phi, N, I, K, mu, A, V, sigma_a, w, q):
     print "Balance = " + str(balance)
 
     print " "
+
+
+    # check conservation of the first cell
+    total_in_flow = 0.0
+    total_out_flow = 0.0
+    total_absorption = 0.0
+    total_source_rate = 0.0
+    for n in range (N):
+        if (mu[n] < 0.0):
+            total_in_flow += psi_edge[1, n]*A[1]*np.abs(mu[n])*w[n]
+        else:
+            total_out_flow += psi_edge[1, n]*A[1]*np.abs(mu[n])*w[n]
+
+    total_absorption = phi[0,0]*V[0]*sigma_a[0]
+    total_source_rate = q[0]*V[0]
+
+    print " "
+    print "-- Balance Table First Cell --"
+    print "Total in flow = " + str(total_in_flow)
+    print "Total out flow = " + str(total_out_flow)
+    print "Total absorption = " + str(total_absorption)
+    print "Total source rate = " + str(total_source_rate)
+
+    balance = ( total_in_flow + total_source_rate - total_out_flow - total_absorption ) / ( total_in_flow + total_source_rate )
+    print "Balance = " + str(balance)
+
     return total_out_flow
 
 
@@ -628,22 +655,25 @@ def print_inputs(rb, N, I, use_DSA, tolerance, maxits, type, normalization, norm
     
     print ""
 
-    print "Inputs".center(93)
-    print "---------------------------------------------------------------------------------------------".center(85)
+    print "---------------------------------------- Input Table ---------------------------------------------".center(85)
     print "Outer Boundary:".rjust(31) + "|".center(31) + str(rb).ljust(20)
     print "Number of Angles:".rjust(31) + "|".center(31) + str(N).ljust(20)
     print "Number of Cells:".rjust(31) + "|".center(31) + str(I).ljust(20)
     print "Using DSA:".rjust(31) + "|".center(31) + str(use_DSA).ljust(20)
     print "Tolerance:".rjust(31) + "|".center(31) + str(tolerance).ljust(20)
     print "Max Iterations:".rjust(31) + "|".center(31) + str(maxits).ljust(20)
+
     if (type == 1): s = "Constant isotropic distributed source (vacuum boundary)"
     elif (type == 2): s = "Right isotropic boundary flux"
     elif (type == 3): s = "Right anisotropic boundary flux"
     elif (type == 4): s = "Constant isotropic distributed source / right isotropic boundary flux"
     else: s = "Constant isotropic distributed source / right anisotropic boundary flux"
+
     print "Source Type:".rjust(31) + "|".center(31) + str(s).ljust(20)
+
     if (normalization == 1): s = "Point"
     else: s = "Integral"
+
     print "Normalization Type:".rjust(31) + "|".center(31) + str(s).ljust(20)
     print "Source Value:".rjust(31) + "|".center(31) + str(normalization_values[0]).ljust(20)
     print "Boundary Value:".rjust(31) + "|".center(31) + str(normalization_values[1]).ljust(20)
@@ -711,9 +741,9 @@ r, phi, total_out_flow_50 = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N
 #
 #
 # Problem 17 part c
-file = 'problem17_partc.xml'
-rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
-r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
+#file = 'problem17_partc.xml'
+#rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+#r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
 #
 #plt.figure()
 #plt.plot(r, phi_parta, label="Part a")
