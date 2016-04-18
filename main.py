@@ -196,9 +196,20 @@ def source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization
         # calculate phi
         phi = calculate_phi(psi, N, W, MU, K)
         
+        # do dsa
+        if (use_DSA):
+            delta_phi, phi_edge, mu_average = perform_DSA(phi, phi_old, A, V, sigma_a, sigma_s, K, gamma[:,1], hr, I, MU, W, N)
+            # update phi
+            phi[:,0] += delta_phi
+            for n in range (N):
+                if (MU[n] > 0):
+                    psi_edge[I,n] += 0.5*(phi_edge[I] + 3*phi_edge[I]*mu_average*MU[n])
+            print_balance_table(psi, psi_edge, phi, N, I, K, MU, A, V, sigma_a, W, q)
+                
         # check convergence
         max_relative_change = np.max(np.abs((phi[:,0] - phi_old[:,0])/phi[:,0]))
-        spectral_radius = np.sum(np.abs(phi[:,0] - phi_old[:,0]))/np.sum(np.abs(phi_old[:,0] - phi_old_old[:,0]))
+        if (iteration > 1):
+            spectral_radius = np.sum(np.abs(phi[:,0] - phi_old[:,0]))/np.sum(np.abs(phi_old[:,0] - phi_old_old[:,0]))
         if (iteration == 1 or iteration == 2):
             spectral_radius = 0.0
         relative_error = float(max_relative_change/(1 - spectral_radius))
@@ -221,6 +232,73 @@ def source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization
     total_out_flow = print_balance_table(psi, psi_edge, phi, N, I, K, MU, A, V, sigma_a, W, q)
     
     return r_center, phi, total_out_flow
+#-------------------------------------------------------------------------------
+def perform_DSA(phi, phi_old, A, V, sigma_a, sigma_s, K, gamma, hr, I, mu, w, N):
+    """ Compute a transport sweep in spherical coordinate system
+    Inputs:
+        I:               number of zones 
+        hr:              size of each zone
+        q:               source array
+        sigma_t:         array of total cross-sections
+        mu:              direction to sweep
+        BCs:             value of angular flux on the boundary
+        N:               number of angle discretization
+        gamma:           only the r^2 weighted values
+        alpha:           angle coefficient
+        beta:            weights for anglular discretization
+        w:               quadrature weights
+        A:               Area at each edge of the mesh
+        V:               Volume of each zone
+    Outputs:
+        psi:             value of volume weighted angular flux in each zone for each quadrature
+        psi_edge:        value of the angluar flux at the mesh edges for each quadrature
+    """
+
+    phi_edge = np.zeros((I+1))
+    M = np.zeros((I+1,I+1))
+    b = np.zeros((I+1))
+    D = np.zeros((I))
+    
+    # determine diffusion coefficient
+    for i in range (I):
+        if (K > 0): D[i] = 1/(3*(sigma_t[i] - sigma_s[i,1]))
+        else:
+            D[i] = 1/(3*sigma_t[i])
+
+    # determine mu average (used for right boundary condition)
+    mu_average = 0.0
+    for n in range (N):
+        if (mu[n] > 0):
+            mu_average += mu[n]*w[n]
+
+    # set matrix coefficients for first and last edges
+    M[0, 0] = D[0]*A[1]/hr + (1.0 - gamma[0])*sigma_a[0]*V[0]
+    M[0, 1] = (sigma_a[0]*V[0]*gamma[0] - D[0]*A[1]/hr)
+    M[(I), (I-1)] = sigma_a[I-1]*V[I-1]*(1 - gamma[I-1]) - (A[I-1] + A[I])*D[I-1]/hr
+    M[(I), (I)] = sigma_a[I-1]*V[I-1]*(gamma[I-1]) + (A[I-1] + A[I])*D[I-1]/hr + 2*A[I]*mu_average
+    b[0] = sigma_s[0]*V[0]*(phi[0] - phi_old[0])
+    b[I] = sigma_s[I-1]*V[I-1]*(phi[I-1] - phi_old[I-1])
+
+    # set matrix coefficients or interior edges
+    for i in range (0, I-1):
+        # diagonal
+        M[i+1,i+1] = sigma_a[i]*V[i]*gamma[i] + (1 - gamma[i+1])*sigma_a[i+1]*V[i+1] + (A[i+1] + A[i+2])*D[i+1]/hr + (A[i] + A[i+1])*D[i]/hr
+        # negative diagonal
+        M[i+1, i] = sigma_a[i]*V[i]*(1 - gamma[i]) - (A[i] + A[i+1])*D[i]/hr
+        # positive diagonal
+        M[i+1, i+2] = sigma_a[i+1]*V[i+1]*(gamma[i+1]) - (A[i+1] + A[i+2])*D[i+1]/hr
+        b[i+1] = sigma_s[i]*V[i]*(phi[i] - phi_old[i]) + sigma_s[i+1]*V[i+1]*(phi[i+1] - phi_old[i+1])
+
+    # solve for the edge values
+    phi_edge = np.linalg.solve(M,b)
+
+    # collapse phi_edge
+    phi_error = np.zeros((I))
+    for i in range (I):
+        phi_error[i] = gamma[i]*phi_edge[i+1] + (1 - gamma[i])*phi_edge[i]
+    return phi_error, phi_edge, mu_average
+
+
 #-------------------------------------------------------------------------------
 def set_area_and_volume(r, I):
     """Set the area and volume for the problem
@@ -494,28 +572,28 @@ def print_balance_table(psi, psi_edge, phi, N, I, K, mu, A, V, sigma_a, w, q):
 
 
     # check conservation of the first cell
-    total_in_flow = 0.0
-    total_out_flow = 0.0
-    total_absorption = 0.0
-    total_source_rate = 0.0
-    for n in range (N):
-        if (mu[n] < 0.0):
-            total_in_flow += psi_edge[1, n]*A[1]*np.abs(mu[n])*w[n]
-        else:
-            total_out_flow += psi_edge[1, n]*A[1]*np.abs(mu[n])*w[n]
-
-    total_absorption = phi[0,0]*V[0]*sigma_a[0]
-    total_source_rate = q[0]*V[0]
-
-    print " "
-    print "-- Balance Table First Cell --"
-    print "Total in flow = " + str(total_in_flow)
-    print "Total out flow = " + str(total_out_flow)
-    print "Total absorption = " + str(total_absorption)
-    print "Total source rate = " + str(total_source_rate)
-
-    balance = ( total_in_flow + total_source_rate - total_out_flow - total_absorption ) / ( total_in_flow + total_source_rate )
-    print "Balance = " + str(balance)
+#    total_in_flow = 0.0
+#    total_out_flow = 0.0
+#    total_absorption = 0.0
+#    total_source_rate = 0.0
+#    for n in range (N):
+#        if (mu[n] < 0.0):
+#            total_in_flow += psi_edge[1, n]*A[1]*np.abs(mu[n])*w[n]
+#        else:
+#            total_out_flow += psi_edge[1, n]*A[1]*np.abs(mu[n])*w[n]
+#
+#    total_absorption = phi[0,0]*V[0]*sigma_a[0]
+#    total_source_rate = q[0]*V[0]
+#
+#    print " "
+#    print "-- Balance Table First Cell --"
+#    print "Total in flow = " + str(total_in_flow)
+#    print "Total out flow = " + str(total_out_flow)
+#    print "Total absorption = " + str(total_absorption)
+#    print "Total source rate = " + str(total_source_rate)
+#
+#    balance = ( total_in_flow + total_source_rate - total_out_flow - total_absorption ) / ( total_in_flow + total_source_rate )
+#    print "Balance = " + str(balance)
 
     return total_out_flow
 
@@ -695,9 +773,9 @@ def print_inputs(rb, N, I, use_DSA, tolerance, maxits, type, normalization, norm
 # Problem 17 part a
 
 # 50 cells
-file = 'problem17_parta.xml'
-rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
-r, phi, total_out_flow_50 = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
+#file = 'problem17_parta.xml'
+#rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+#r, phi, total_out_flow_50 = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
 
 #plt.figure()
 #plt.plot(r, phi)
@@ -753,9 +831,9 @@ r, phi, total_out_flow_50 = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N
 #plt.legend(loc="best")
 #
 ## Problem 17 part d
-#file = 'problem17_partd.xml'
-#rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
-#r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
+file = 'problem17_partd.xml'
+rb, N, I, use_DSA, tolerance, maxits, type, normalization, normalization_values, sigma_a, sigma_t, sigma_s, K = get_inputs(file)
+r, phi, total_out_flow = source_iteration(I, rb, sigma_t, sigma_a, sigma_s, N, K, type, normalization, normalization_values, tolerance = tolerance, maxits = maxits, LOUD=True )
 #
 #plt.figure()
 #plt.plot(r, phi[:,0], label="")

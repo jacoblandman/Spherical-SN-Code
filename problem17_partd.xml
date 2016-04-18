@@ -5,7 +5,7 @@
         <outer_radius>1.0</outer_radius>
         <n_angles>8</n_angles>
         <n_cells>100</n_cells>
-        <use_DSA>FALSE</use_DSA>
+        <use_DSA>TRUE</use_DSA>
         <tolerance>1.0E-4</tolerance>
         <max_iterations>10000</max_iterations>
     </common>
