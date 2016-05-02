@@ -6,7 +6,7 @@
         <n_angles>4</n_angles>
         <n_cells>200</n_cells>
         <use_DSA>FALSE</use_DSA>
-        <tolerance>1.0E-8</tolerance>
+        <tolerance>1.0E-10</tolerance>
         <max_iterations>500</max_iterations>
     </common>
     

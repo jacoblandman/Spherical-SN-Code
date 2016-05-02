@@ -16,12 +16,24 @@
 		AE9F0DA91CBC606400B99947 /* problem17_partb.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = problem17_partb.xml; sourceTree = "<group>"; };
 		AE9F0DAA1CBEB9B900B99947 /* problem17_partc.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = problem17_partc.xml; sourceTree = "<group>"; };
 		AE9F0DAB1CBEE60E00B99947 /* problem17_partd.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = problem17_partd.xml; sourceTree = "<group>"; };
+		AEFFA4BD1CD3C37C002BC9A6 /* problem1part1.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = problem1part1.xml; sourceTree = "<group>"; };
+		AEFFA4BE1CD3C53C002BC9A6 /* problem1part2.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = problem1part2.xml; sourceTree = "<group>"; };
+		AEFFA4BF1CD3CCB7002BC9A6 /* problem1partd.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = problem1partd.xml; sourceTree = "<group>"; };
+		AEFFA4C01CD3CD79002BC9A6 /* problem1parte.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = problem1parte.xml; sourceTree = "<group>"; };
+		AEFFA4C11CD7ADC0002BC9A6 /* problem2part1.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = problem2part1.xml; sourceTree = "<group>"; };
+		AEFFA4C21CD7BE14002BC9A6 /* problem2partd.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = problem2partd.xml; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		AE9F0D971CB440E500B99947 = {
 			isa = PBXGroup;
 			children = (
+				AEFFA4C21CD7BE14002BC9A6 /* problem2partd.xml */,
+				AEFFA4C11CD7ADC0002BC9A6 /* problem2part1.xml */,
+				AEFFA4C01CD3CD79002BC9A6 /* problem1parte.xml */,
+				AEFFA4BF1CD3CCB7002BC9A6 /* problem1partd.xml */,
+				AEFFA4BE1CD3C53C002BC9A6 /* problem1part2.xml */,
+				AEFFA4BD1CD3C37C002BC9A6 /* problem1part1.xml */,
 				AE9F0DAB1CBEE60E00B99947 /* problem17_partd.xml */,
 				AE9F0DAA1CBEB9B900B99947 /* problem17_partc.xml */,
 				AE9F0DA91CBC606400B99947 /* problem17_partb.xml */,
@@ -196,6 +208,7 @@
 				AE9F0DA11CB440E500B99947 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

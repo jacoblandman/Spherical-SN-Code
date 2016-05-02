@@ -7,7 +7,7 @@
         <n_cells>100</n_cells>
         <use_DSA>TRUE</use_DSA>
         <tolerance>1.0E-4</tolerance>
-        <max_iterations>10000</max_iterations>
+        <max_iterations>20</max_iterations>
     </common>
     
     <!-- Information about the source -->
@@ -23,9 +23,6 @@
         <scattering_order>0</scattering_order>
         <sigma_a>0.0</sigma_a>
         <sigma_t>30.0</sigma_t>
-        <sigma_1>1.0</sigma_1>
-        <sigma_2>1.0</sigma_2>
-        <sigma_3>1.0</sigma_3>
     </cross_sections>
     
 </prototype>
